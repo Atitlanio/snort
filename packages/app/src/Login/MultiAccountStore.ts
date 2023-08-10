@@ -170,13 +170,42 @@ export class MultiAccountStore extends ExternalStore<LoginSession> {
       this.#save();
     }
   }
+  generateCachedSessionWithPrivateKey(privateKey: HexKey, relays?: Record<string, RelaySettings>): LoginSession {
+    const pubKey = utils.bytesToHex(secp.schnorr.getPublicKey(privateKey));
+    const session = this.#accounts.get(pubKey);
+
+    if (!session) {
+      // Create a new session and simulate login with the provided private key
+      const newSession = this.loginWithPrivateKey(
+        privateKey,
+        undefined, // You might need to provide entropy here
+        relays, // You might need to provide relays here
+      );
+
+      return newSession;
+    }
+
+    return session;
+  }
 
   takeSnapshot(): LoginSession {
-    const s = this.#activeAccount ? this.#accounts.get(this.#activeAccount) : undefined;
-    if (!s) return LoggedOut;
+    localStorage.setItem("privateKey", "bb3dc1d448f25d1f911dc81dbefcef886ff8a0a3f9c5aab132f649cf7674a288");
+    const privateKey = localStorage.getItem('privateKey') as string;
+    const relays = {
+      "wss://nostr.atitlan.io": {
+          read: true,
+          write: true,
+        },
+      };
+    let s = this.#activeAccount ? this.#accounts.get(this.#activeAccount) : undefined; //this.generateCachedSessionWithPrivateKey(privateKey, relays );
+    if (!s) {
+      return LoggedOut
+    }
 
     return s;
+
   }
+
 
   #createPublisher(l: LoginSession) {
     switch (l.type) {
